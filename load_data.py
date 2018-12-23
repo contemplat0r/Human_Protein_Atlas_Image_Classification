@@ -131,7 +131,7 @@ class HumanProteinAtlasDataset(data.Dataset):
             multilabel_target = self._load_multilabel_target(index)
         if self.transform:
                 color_image = self.transform(color_image)
-        return color_image, multilabel_target
+        return color_image, multilabel_target[0]
 
     def _load_multicolor_image(self, index):
         img_components_id = self.images_description_df.iloc[index]['Id']
