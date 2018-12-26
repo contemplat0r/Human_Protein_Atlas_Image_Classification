@@ -13,8 +13,10 @@ from PIL import Image
 import torch
 from torchvision import datasets, transforms, models
 from torch.utils import data
+from torch.utils.data.sampler import SubsetRandomSampler
 
 CLASSES = np.arange(0,28)
+BATCH_SIZE = 40
 multilabel_binarizer = MultiLabelBinarizer(CLASSES)
 multilabel_binarizer.fit(CLASSES)
 
@@ -107,6 +109,35 @@ def load_imgs_color_groups(grouped_img_fnames):
         }
         imgs_color_groups[img_grp_id] = grouped_images
     return imgs_color_groups
+
+def prepare_loaders(dataset, valid_train_ratio=0.6):
+    dataset_size = len(dataset)
+    train_subset_size = valid_train_ratio * dataset_size
+    validation_subset_size = valid_train_ratio * (1 - valid_train_ratio)
+
+    indices = list(range(dataset_size))
+    validation_indices = np.random.choice(indices, size=validation_subset_size, replace=False)
+    train_indices = list(set(indices) - set(validation_indices))
+
+    train_sampler = SubsetRandomSampler(train_indices)
+    validation_sampler = SubsetRandomSampler(validation_indices)
+    
+    dataset_sizes = {
+            'train': len(train_indices),
+            'validation': len(validation_indices)
+        }
+
+    train_loader = data.DataLoader(dataset, batch_size=BATCH_SIZE, num_workers=1, sampler=train_sampler)
+    validation_loader = data.DataLoader(dataset, batch_size=BATCH_SIZE, num_workers=1, sampler=validation_sampler)
+
+    loaders = {
+            'train': train_loader,
+            'validation': validation_loader
+        }
+
+    return loaders, dataset_sizes
+
+
 
 class HumanProteinAtlasDataset(data.Dataset):
 
