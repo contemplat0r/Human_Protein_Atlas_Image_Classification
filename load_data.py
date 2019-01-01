@@ -27,6 +27,10 @@ TARGETS_COLUMN_NAME = 'Target'
 COLORS = ('red', 'green', 'blue', 'yellow')
 IMAGE_FILE_EXT = 'png'
 
+IMG_WIDTH = 256
+IMG_HEIGTH = 256
+IMAGE_SCALE_FACTOR = 1.0 / 256
+
 
 def show_data_dir_content(data_dir):
     return os.listdir(data_dir)
@@ -178,7 +182,8 @@ class HumanProteinAtlasDataset(data.Dataset):
 
     def __getitem__(self, index):
         multilabel_target = None
-        color_image = self._load_multicolor_image(index)
+        #color_image = self._load_multicolor_image(index)
+        color_image = self._load_image_color_components(index) * IMAGE_SCALE_FACTOR
         if self.train_mode:
             multilabel_target = self._load_multilabel_target(index)
         if self.transform:
@@ -197,6 +202,23 @@ class HumanProteinAtlasDataset(data.Dataset):
                 )
             image_color_components.append(Image.open(path_to_color_component_file))
         return Image.merge('RGBA', bands=image_color_components) 
+
+    def _load_image_color_components(self, index):
+        img_components_id = self.images_description_df.iloc[index]['Id']
+        #print("_load_multicolor_image, img_components_id: ", img_components_id)
+        #image_color_components = []
+        image_color_components = np.zeros(shape=(IMG_WIDTH, IMG_HEIGTH, 4))
+        for i, color in enumerate(COLORS):
+            path_to_color_component_file = pathlib.Path(
+                    self.path_to_img_dir, '{}_{}.{}'.format(
+                        img_components_id, color, IMAGE_FILE_EXT
+                    )
+                )
+            #image_color_components.append(Image.open(path_to_color_component_file))
+            image_color_components[:, :, i] = np.asarray(
+                    Image.open(path_to_color_component_file).resize((IMG_WIDTH, IMG_HEIGTH))
+                )
+        return image_color_components
 
     def _load_multilabel_target(self, index):
         return multilabel_binarizer.transform(
