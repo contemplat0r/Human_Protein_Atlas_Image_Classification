@@ -181,14 +181,16 @@ class HumanProteinAtlasDataset(data.Dataset):
 
 
     def __getitem__(self, index):
-        multilabel_target = None
         #color_image = self._load_multicolor_image(index)
         color_image = self._load_image_color_components(index) * IMAGE_SCALE_FACTOR
-        if self.train_mode:
-            multilabel_target = self._load_multilabel_target(index)
         if self.transform:
                 color_image = self.transform(color_image)
-        return color_image, multilabel_target[0]
+        if self.train_mode:
+            multilabel_target = self._load_multilabel_target(index)
+            return color_image, multilabel_target[0]
+        else:
+            return color_image, None
+
 
     def _load_multicolor_image(self, index):
         img_components_id = self.images_description_df.iloc[index]['Id']
